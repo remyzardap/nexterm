@@ -25,3 +25,15 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Artifacts
+
+### NexTerm (`artifacts/nexterm`)
+- **Kind**: Web app (React + Vite + Tailwind v4)
+- **Preview path**: `/` (root)
+- **Port**: 20608
+- **Description**: Full SSH & Remote Desktop management web app
+- **Stack**: React, wouter, framer-motion, xterm.js (`@xterm/xterm`), lucide-react, @tanstack/react-query, Tailwind v4
+- **Pages**: Dashboard, Terminal (xterm.js with SFTP panel + multi-tab), Remote Desktop (canvas viewer + toolbar + perf panel), Connections manager, Settings
+- **Data**: All mock data — no backend required
+- **Custom theme**: `--bg-primary` through `--accent-*` CSS vars, JetBrains Mono font for terminal, Inter/Space Grotesk for UI
