@@ -20,9 +20,9 @@ export function createSession(name: string, server: string): TerminalSession {
 }
 
 export const initialSessions: TerminalSession[] = [
-  { id: "session-1", name: "web-server-01", server: "192.168.1.10", connected: true, output: "" },
-  { id: "session-2", name: "db-primary", server: "192.168.1.20", connected: true, output: "" },
-  { id: "session-3", name: "staging-web", server: "10.0.0.50", connected: true, output: "" },
+  { id: "session-1", name: "SSH Server", server: "live", connected: true, output: "" },
+  { id: "session-2", name: "db-primary (demo)", server: "192.168.1.20", connected: true, output: "" },
+  { id: "session-3", name: "staging-web (demo)", server: "10.0.0.50", connected: true, output: "" },
 ];
 
 export const mockPrompt = (server: string) =>
