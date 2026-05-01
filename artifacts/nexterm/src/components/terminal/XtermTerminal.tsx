@@ -89,6 +89,8 @@ export function XtermTerminal({ session, active }: XtermTerminalProps) {
   const fitAddonRef = useRef<FitAddon | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const initRef = useRef(false);
+  const onDataDisposableRef = useRef<{ dispose: () => void } | null>(null);
+  const onResizeDisposableRef = useRef<{ dispose: () => void } | null>(null);
 
   const connectSsh = useCallback((term: XTerm, fitAddon: FitAddon) => {
     const { cols, rows } = term;
@@ -141,13 +143,17 @@ export function XtermTerminal({ session, active }: XtermTerminalProps) {
       runMockSession(term, session.server, session.name);
     };
 
-    // Forward keyboard input to the server
-    term.onData((data) => {
+    // Dispose any existing listeners before registering new ones
+    onDataDisposableRef.current?.dispose();
+    onResizeDisposableRef.current?.dispose();
+
+    // Forward keyboard input to the server (only one listener at a time)
+    onDataDisposableRef.current = term.onData((data) => {
       if (ws.readyState === WebSocket.OPEN) ws.send(data);
     });
 
-    // Forward resize events
-    term.onResize(({ cols, rows }) => {
+    // Forward resize events (only one listener at a time)
+    onResizeDisposableRef.current = term.onResize(({ cols, rows }) => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "resize", cols, rows }));
       }
@@ -200,6 +206,8 @@ export function XtermTerminal({ session, active }: XtermTerminalProps) {
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      onDataDisposableRef.current?.dispose();
+      onResizeDisposableRef.current?.dispose();
       wsRef.current?.close();
       term.dispose();
     };
