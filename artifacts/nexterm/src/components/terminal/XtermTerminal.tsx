@@ -110,11 +110,20 @@ export function XtermTerminal({ session, active }: XtermTerminalProps) {
     wsRef.current = ws;
     ws.binaryType = "arraybuffer";
 
+    // Guard: ensures mock fallback is only triggered once per connection attempt
+    let fallbackTriggered = false;
+    const triggerFallback = (reason: string) => {
+      if (fallbackTriggered) return;
+      fallbackTriggered = true;
+      term.writeln(`\r\n\x1b[33m  ${reason}\x1b[0m`);
+      wsRef.current = null;
+      runMockSession(term, session.server, session.name);
+    };
+
     const connectTimeout = setTimeout(() => {
       if (ws.readyState !== WebSocket.OPEN) {
         ws.close();
-        term.writeln("\r\n\x1b[33m  Connection timed out — falling back to demo mode\x1b[0m");
-        runMockSession(term, session.server, session.name);
+        triggerFallback("Connection timed out — falling back to demo mode");
       }
     }, 8000);
 
@@ -132,15 +141,16 @@ export function XtermTerminal({ session, active }: XtermTerminalProps) {
 
     ws.onclose = (e) => {
       clearTimeout(connectTimeout);
-      if (e.code !== 1000) {
+      wsRef.current = null;
+      // Only print close message if this was a normal close after a live session
+      if (!fallbackTriggered && e.code !== 1000) {
         term.writeln(`\r\n\x1b[33m  Connection closed (${e.code})\x1b[0m`);
       }
     };
 
     ws.onerror = () => {
       clearTimeout(connectTimeout);
-      term.writeln("\r\n\x1b[33m  Could not reach SSH server — falling back to demo mode\x1b[0m");
-      runMockSession(term, session.server, session.name);
+      triggerFallback("Could not reach SSH server — falling back to demo mode");
     };
 
     // Dispose any existing listeners before registering new ones

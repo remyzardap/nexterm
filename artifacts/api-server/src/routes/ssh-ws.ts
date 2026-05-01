@@ -26,7 +26,6 @@ export function attachSshWebSocketServer(httpServer: Server) {
     const password = url.searchParams.get("password") ?? process.env["SSH_PASSWORD"] ?? "";
     const cols = Number(url.searchParams.get("cols") ?? 80);
     const rows = Number(url.searchParams.get("rows") ?? 24);
-
     if (!host || !username) {
       ws.send("\r\n\x1b[31mError: Missing SSH_HOST or SSH_USERNAME\x1b[0m\r\n");
       ws.close();
@@ -34,6 +33,8 @@ export function attachSshWebSocketServer(httpServer: Server) {
     }
 
     const ssh = new SshClient();
+    let sshEnded = false;
+    const safeEndSsh = () => { if (!sshEnded) { sshEnded = true; ssh.end(); } };
 
     ssh.on("ready", () => {
       ws.send("\r\n\x1b[32mConnected to " + host + "\x1b[0m\r\n");
@@ -41,6 +42,7 @@ export function attachSshWebSocketServer(httpServer: Server) {
         if (err) {
           ws.send(`\r\n\x1b[31mShell error: ${err.message}\x1b[0m\r\n`);
           ws.close();
+          safeEndSsh();
           return;
         }
 
@@ -53,9 +55,11 @@ export function attachSshWebSocketServer(httpServer: Server) {
         });
 
         stream.on("close", () => {
-          ws.send("\r\n\x1b[33mSession closed.\x1b[0m\r\n");
+          if (ws.readyState === ws.OPEN) {
+            ws.send("\r\n\x1b[33mSession closed.\x1b[0m\r\n");
+          }
           ws.close();
-          ssh.end();
+          safeEndSsh();
         });
 
         ws.on("message", (msg) => {
@@ -72,7 +76,13 @@ export function attachSshWebSocketServer(httpServer: Server) {
 
         ws.on("close", () => {
           stream.close();
-          ssh.end();
+          safeEndSsh();
+        });
+
+        ws.on("error", (err) => {
+          logger.error({ err, host }, "WebSocket error");
+          stream.close();
+          safeEndSsh();
         });
       });
     });
@@ -83,6 +93,7 @@ export function attachSshWebSocketServer(httpServer: Server) {
         ws.send(`\r\n\x1b[31mSSH Error: ${err.message}\x1b[0m\r\n`);
         ws.close();
       }
+      safeEndSsh();
     });
 
     ssh.connect({

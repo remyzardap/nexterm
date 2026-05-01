@@ -101,7 +101,7 @@ export function SftpPanel({ isOpen, onToggle, serverName }: SftpPanelProps) {
       <div className="flex items-center gap-1 px-4 py-2 border-b border-border-default overflow-x-auto shrink-0" style={{ borderBottomColor: "rgba(255,255,255,0.10)" }}>
         <button onClick={() => navigateToPath("/")} className="text-xs text-text-muted hover:text-text-primary transition-colors shrink-0">/</button>
         {pathParts.map((part, i) => (
-          <span key={i} className="flex items-center gap-1 shrink-0">
+          <span key={breadcrumbPath(i)} className="flex items-center gap-1 shrink-0">
             <button onClick={() => navigateToPath(breadcrumbPath(i))} className="text-xs text-text-muted hover:text-text-primary transition-colors">{part}</button>
             {i < pathParts.length - 1 && <ChevronRight className="w-3 h-3 text-text-muted" />}
           </span>

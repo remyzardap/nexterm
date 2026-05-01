@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search } from "lucide-react";
 import { TerminalTabs } from "@/components/terminal/TerminalTabs";
@@ -16,20 +16,30 @@ export default function Terminal() {
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? sessions[0];
 
+  // Use a ref to hold the current activeSessionId so handleCloseTab is stable
+  // and never closes over a stale value.
+  const activeSessionIdRef = useRef(activeSessionId);
+  activeSessionIdRef.current = activeSessionId;
+
   const handleCloseTab = useCallback((id: string) => {
     setSessions((prev) => {
       const filtered = prev.filter((s) => s.id !== id);
       if (filtered.length === 0) return prev;
-      if (activeSessionId === id) setActiveSessionId(filtered[filtered.length - 1].id);
+      if (activeSessionIdRef.current === id) {
+        setActiveSessionId(filtered[filtered.length - 1].id);
+      }
       return filtered;
     });
-  }, [activeSessionId]);
+  }, []);
 
   const handleNewTab = useCallback(() => {
-    const newSession = createSession(`session-${sessions.length + 1}`, "10.0.0.50");
-    setSessions((prev) => [...prev, newSession]);
-    setActiveSessionId(newSession.id);
-  }, [sessions.length]);
+    // Use functional update to avoid stale sessions.length closure
+    setSessions((prev) => {
+      const newSession = createSession(`session-${prev.length + 1}`, "10.0.0.50");
+      setActiveSessionId(newSession.id);
+      return [...prev, newSession];
+    });
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "f") {
